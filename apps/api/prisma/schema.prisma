@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  employee
+  manager
+  admin
+}
+
+enum AttendanceStatus {
+  working
+  finished
+}
+
+enum ExpenseRequestStatus {
+  draft
+  submitted
+  approved
+  rejected
+}
+
+enum ApprovalTargetType {
+  expense_request
+}
+
+enum ApprovalActionType {
+  submitted
+  approved
+  rejected
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  cognitoSub         String?            @unique
+  email              String             @unique
+  name               String
+  role               Role               @default(employee)
+  dailyReports       DailyReport[]
+  attendanceRecords  AttendanceRecord[]
+  expenseRequests    ExpenseRequest[]   @relation("ExpenseRequestOwner")
+  approvedRequests   ExpenseRequest[]   @relation("ExpenseRequestApprover")
+  approvalHistories  ApprovalHistory[]  @relation("ApprovalHistoryActor")
+  auditLogs          AuditLog[]         @relation("AuditLogActor")
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model DailyReport {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  workDate  DateTime @db.Date
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([workDate])
+}
+
+model AttendanceRecord {
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  workDate   DateTime         @db.Date
+  clockInAt  DateTime
+  clockOutAt DateTime?
+  status     AttendanceStatus
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([userId, workDate])
+  @@index([workDate])
+  @@index([status])
+}
+
+model ExpenseRequest {
+  id             String               @id @default(cuid())
+  userId         String
+  user           User                 @relation("ExpenseRequestOwner", fields: [userId], references: [id], onDelete: Restrict)
+  title          String
+  amount         Int
+  purpose        String
+  status         ExpenseRequestStatus @default(draft)
+  submittedAt    DateTime?
+  approvedBy     String?
+  approver       User?                @relation("ExpenseRequestApprover", fields: [approvedBy], references: [id], onDelete: Restrict)
+  approvedAt     DateTime?
+  rejectedReason String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([userId])
+  @@index([approvedBy])
+  @@index([status])
+}
+
+model ApprovalHistory {
+  id          String             @id @default(cuid())
+  targetType  ApprovalTargetType
+  targetId    String
+  actorUserId String
+  actor       User               @relation("ApprovalHistoryActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  action      ApprovalActionType
+  comment     String?
+  createdAt   DateTime           @default(now())
+
+  @@index([targetType, targetId])
+  @@index([actorUserId])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorUserId  String
+  actor        User     @relation("AuditLogActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  action       String
+  resourceType String
+  resourceId   String
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  @@index([actorUserId])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
+}

@@ -1,0 +1,23 @@
+{
+  "name": "infra",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "cdk": "cdk",
+    "deploy": "cdk deploy",
+    "synth": "cdk synth"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.190.0",
+    "constructs": "^10.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.39",
+    "aws-cdk": "^2.1009.0",
+    "esbuild": "^0.28.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
